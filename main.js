@@ -5,8 +5,8 @@ define = require(__dirname+"/amd.js");
 // main |-> week-days -> chuchu
 //      `->  tutu
 define(["week-days", "tutu"], function(weekDay, Tutu) {
-  console.log(Tutu);
-  console.log(weekDay.chuchu);
-  console.log(weekDay.name(0));
+  console.log("main: "+Tutu);
+  console.log("main: "+weekDay.chuchu);
+  console.log("main: "+weekDay.name(0));
 });
 
