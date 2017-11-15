@@ -1,5 +1,6 @@
 // Module week-days
 define(["chuchu"], function(Chuchu) {
+  console.log("week-days: "+Chuchu+"!!!!");
   var names = ["Sunday", "Monday", "Tuesday", "Wednesday",
                "Thursday", "Friday", "Saturday"];
   return {
