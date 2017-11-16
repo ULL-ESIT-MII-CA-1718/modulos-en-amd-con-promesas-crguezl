@@ -56,6 +56,7 @@ function define(depNames, moduleFunction) {
   myMod.moduleFunction = moduleFunction;
 
   Promise.all(deps).then((modules) => {
+    if (!modules.every(function(m) { return m.loaded; })) return;
     var args = modules.map((m) => m.exports);
     var exports = moduleFunction.apply(null, args);
     myMod.loaded = true;
