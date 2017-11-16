@@ -1,4 +1,3 @@
-var path = require("path");
 var fs = require('fs');
 
 const {inspect, promisify} = require('util');
@@ -54,7 +53,6 @@ function getModule(name) {
 function define(depNames, moduleFunction) {
   var myMod = currentMod;
   var deps = depNames.map(getModule);
-  console.log(path.basename(__filename));
   myMod.moduleFunction = moduleFunction;
 
   Promise.all(deps).then((modules) => {
