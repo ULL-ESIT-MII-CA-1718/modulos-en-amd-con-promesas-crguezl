@@ -11,6 +11,7 @@ var currentMod = {
       name: "main",    // for debugging only
       exports: null, // Contains the object returned by the module function once it has been evaluated
       loaded: false, // It is set to true when the module has been read and fully evaluated
+      onLoad: []     // Queue of 'event handlers'  "whenDepsLoaded" to execute for the modules waiting for the load of this  module
     };
 
 function getModule(name) {
@@ -21,6 +22,7 @@ function getModule(name) {
       name: name,    // for debugging only
       exports: null, // Contains the object returned by the module function once it has been evaluated
       loaded: false, // It is set to true when the module has been read and fully evaluated
+      onLoad: []     // Queue of 'event handlers'  "whenDepsLoaded" to execute for the modules waiting for the load of this  module
     };
     defineCache[name] = module;
     backgroundReadFile(name+".js").then((code) => {
@@ -55,14 +57,41 @@ function define(depNames, moduleFunction) {
   var deps = depNames.map(getModule);
   myMod.moduleFunction = moduleFunction;
 
+
   Promise.all(deps).then((modules) => {
-    if (!modules.every(function(m) { return m.loaded; })) return;
-    var args = modules.map((m) => m.exports);
-    var exports = moduleFunction.apply(null, args);
-    myMod.loaded = true;
-    myMod.exports = exports;
-    console.log("define: myMod = "+inspect(myMod, {depth: null})+"\n   depNames = "+depNames);
-    console.log("define. All deps read. Array modules is:\n  "+inspect(modules, {depth: null}));
+    function whenDepsLoaded() {
+      if (!modules.every(function(m) { return m.loaded; }))
+        return;  
+        /* This function immediately returns if there are still
+         * unloaded dependencies, so it will do actual work only once,
+         * when the last dependency has finished loading.
+         */
+
+      //console.log("whenDepsLoaded. myMod = "+inspect(myMod));
+      var args = modules.map(function(m) { 
+        return m.exports; 
+      });
+      //console.log("whenDepsLoaded: calling with args:\n  "+inspect(args));
+      var exports = moduleFunction.apply(null, args);
+      if (myMod) {
+        myMod.exports = exports;
+        myMod.loaded = true;
+        myMod.onLoad.forEach(function(f) { f(); }); // Call whenDepsLoaded for all the modules which depend on this module
+        // console.log("whenDepsLoaded after: myMod = "+inspect(myMod, {depth: null})+"\n   depNames = "+depNames);
+        // console.log("whenDepsLoaded after. All deps read. Array modules is:\n  "+inspect(modules, {depth: null}));
+      }
+    }
+
+    modules.forEach(function(mod) {
+      if (!mod.loaded)  // whenDepsLoaded is added to the onLoad array of all dependencies that are not yet loaded.
+        mod.onLoad.push(whenDepsLoaded); // I believe closure here plays an important role
+      // console.log("mod.onLoad: "+inspect(mod.onLoad));
+    });
+    whenDepsLoaded();
+    // var exports = moduleFunction.apply(null, args);
+    // myMod.loaded = true;
+    // myMod.exports = exports;
+    //  myMod.onLoad.forEach(function(f) { f(); }); // Call whenDepsLoaded for all the modules which depend on this module
   }).catch((error) => console.log("Ufff!!!! myMod = "+inspect(myMod)+" Error: "+error));
 }
 /* function define(module dependencies list, callback) */
